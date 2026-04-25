@@ -13,6 +13,7 @@ Succitness is used as a tool to simplify communicating the idea of the app to fe
 **Unit Tests**
 
 With no external libraries and test runners supporting unit tests, I made a simple decision to make the test file executable and use intellij ide to build and run the unit test functions.
+Why not junit??
 
 **Build**
 
