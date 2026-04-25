@@ -30,7 +30,7 @@ class Dealer {
     fun hasNext() = iterator.hasNext()
 }
 
-class Game(private val dealer: Dealer) {
+class FlipGame(private val dealer: Dealer) {
     fun play() {
         println("\nLet's play Flip!\n")
         while (dealer.hasNext()) {
@@ -90,7 +90,7 @@ fun main() {
 
     val dealer = Dealer()
     when (readLine()?.trim()) {
-        "1"  -> Game(dealer).play()
+        "1"  -> FlipGame(dealer).play()
         "2"  -> War(dealer).play()
         else -> { println("Invalid choice — defaulting to Flip."); Game(dealer).play() }
     }
