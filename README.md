@@ -33,3 +33,8 @@ Then execute the program by running:
 `java -jar app.jar`
 
 ## Using 
+
+## Future work
+- update docs
+- learn more kotlin by implementing more card algorithms
+- improve readability
