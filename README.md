@@ -1,6 +1,6 @@
 # kotlin-card-shuffle
 
-A tiny program written in kotlin
+A tiny games program written in kotlin
 
 ## Design
 
