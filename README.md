@@ -39,3 +39,4 @@ Then execute the program by running:
 - learn more kotlin by implementing more card algorithms
 - improve readability
 - improved run. instead of using docker use something else
+- document other interesting card algorithms
