@@ -40,3 +40,4 @@ Then execute the program by running:
 - improve readability
 - improved run. instead of using docker use something else
 - document other interesting card algorithms
+- can we make an executable java program?
