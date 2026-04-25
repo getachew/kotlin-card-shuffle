@@ -1,33 +1,26 @@
-// a Rank of a card is modeled as a string eg: "A" (Ace), "10" (10), "J" (Jack)
 val ranks = listOf("A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K")
-
-// Suits of a card are modeled as a list of card suit characters
 val suits = listOf('♣', '♦', '♥', '♠')
 
-// creates a new deck mapping each rank to the list of suits and
-// then flattening the list of [[rank suits],[rank suits]...] into one long list
-// Note that this function is like opening pack of a brand new deck of cards
-// and cards are sorted by rank suit - shuffle before playing
-fun newDeck() = ranks.map { rank -> suits.map { suit -> "$rank$suit"}}.flatten() as MutableList
+fun newDeck() = ranks.map { rank -> suits.map { suit -> "$rank$suit" } }.flatten() as MutableList<String>
 
-// an extension function
 fun MutableList<String>.swap(index1: Int, index2: Int) {
     val tmp = this[index1]
     this[index1] = this[index2]
     this[index2] = tmp
 }
 
-// Dealer has a deck of cards, knows how to shuffle and deal a single card
+fun cardValue(card: String): Int {
+    val rank = card.dropLast(1)
+    return ranks.indexOf(rank).let { if (it == 0) ranks.size else it }
+}
+
 class Dealer {
     private val deck = newDeck()
     private val iterator = deck.iterator()
-    init {
-        shuffle()
-    }
+    init { shuffle() }
 
-    // fischer-yates shuffle algorithm implemented from wikipedia
-    private fun shuffle(){
-        ((deck.size-1) downTo 1).forEach {
+    private fun shuffle() {
+        ((deck.size - 1) downTo 1).forEach {
             val j = (0..it).random()
             deck.swap(it, j)
         }
@@ -37,23 +30,68 @@ class Dealer {
     fun hasNext() = iterator.hasNext()
 }
 
-// A game takes a dealer and implements a loops in turns its the play function
 class Game(private val dealer: Dealer) {
     fun play() {
-        println("\nLet's play...\n")
-
-        turnLoop@ while (dealer.hasNext()) {
-            print("press enter to be dealt a card:")
+        println("\nLet's play Flip!\n")
+        while (dealer.hasNext()) {
+            print("Press enter to be dealt a card: ")
             readLine()
-            print("${dealer.dealOneCard()}\n\n")
+            println("${dealer.dealOneCard()}\n")
         }
+        println("=== Deck exhausted. Game over! ===")
     }
 }
 
-// main gets a dealer starts a game
-fun main() {
-    val dealer = Dealer()
-    val game = Game(dealer)
+class War(private val dealer: Dealer) {
+    fun play() {
+        println("\nLet's play War!\n")
 
-    game.play()
+        val player = mutableListOf<String>()
+        val computer = mutableListOf<String>()
+        while (dealer.hasNext()) {
+            player.add(dealer.dealOneCard())
+            if (dealer.hasNext()) computer.add(dealer.dealOneCard())
+        }
+
+        var playerScore = 0
+        var computerScore = 0
+
+        while (player.isNotEmpty() && computer.isNotEmpty()) {
+            print("Press enter to battle: ")
+            readLine()
+
+            val playerCard = player.removeFirst()
+            val computerCard = computer.removeFirst()
+            val result = cardValue(playerCard).compareTo(cardValue(computerCard))
+
+            println("  You: $playerCard  vs  CPU: $computerCard")
+            when {
+                result > 0 -> { println("  ✅ You win this round!\n");  playerScore++ }
+                result < 0 -> { println("  ❌ CPU wins this round!\n"); computerScore++ }
+                else       -> { println("  🤝 Tie!\n") }
+            }
+        }
+
+        println("=== Final Score ===")
+        println("You: $playerScore  |  CPU: $computerScore")
+        println(when {
+            playerScore > computerScore -> "🏆 You win the war!"
+            playerScore < computerScore -> "💀 CPU wins the war!"
+            else                        -> "🤝 It's a tie!"
+        })
+    }
+}
+
+fun main() {
+    println("=== Card Games ===")
+    println("1) Flip — flip through the whole deck one card at a time")
+    println("2) War  — battle the CPU, highest card wins each round")
+    print("\nWhich game would you like to play? (1 or 2): ")
+
+    val dealer = Dealer()
+    when (readLine()?.trim()) {
+        "1"  -> Game(dealer).play()
+        "2"  -> War(dealer).play()
+        else -> { println("Invalid choice — defaulting to Flip."); Game(dealer).play() }
+    }
 }
