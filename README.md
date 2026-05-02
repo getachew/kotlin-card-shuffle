@@ -4,7 +4,8 @@ A tiny games program written in kotlin
 
 ## Design
 
-The goal is to demonstrate the power of modern languages to succinctly and safely model meaning & process. This kotlin program models a type safe card game in less than 60 lines of code (100 lines of code including unit tests). 
+The aim is to showcase how modern languages can express meaning and behavior both concisely and safely. This Kotlin program implements a type-safe card game in under 60 lines of code (around 100 lines including unit tests).
+ 
 
 **Simplicity**
 
