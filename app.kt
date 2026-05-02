@@ -1,59 +1,197 @@
-// a Rank of a card is modeled as a string eg: "A" (Ace), "10" (10), "J" (Jack)
 val ranks = listOf("A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K")
-
-// Suits of a card are modeled as a list of card suit characters
 val suits = listOf('♣', '♦', '♥', '♠')
 
-// creates a new deck mapping each rank to the list of suits and
-// then flattening the list of [[rank suits],[rank suits]...] into one long list
-// Note that this function is like opening pack of a brand new deck of cards
-// and cards are sorted by rank suit - shuffle before playing
-fun newDeck() = ranks.map { rank -> suits.map { suit -> "$rank$suit"}}.flatten() as MutableList
+fun newDeck(): MutableList<String> =
+    ranks.flatMap { rank -> suits.map { suit -> "$rank$suit" } }.toMutableList()
 
-// an extension function
 fun MutableList<String>.swap(index1: Int, index2: Int) {
     val tmp = this[index1]
     this[index1] = this[index2]
     this[index2] = tmp
 }
 
-// Dealer has a deck of cards, knows how to shuffle and deal a single card
+fun cardValue(card: String): Int {
+    val rank = card.dropLast(1)
+    val index = ranks.indexOf(rank)
+    return if (index == 0) ranks.size else index
+}
+
 class Dealer {
     private val deck = newDeck()
-    private val iterator = deck.iterator()
+    private val iterator: Iterator<String>
+
     init {
         shuffle()
+        iterator = deck.iterator()
     }
 
-    // fischer-yates shuffle algorithm implemented from wikipedia
-    private fun shuffle(){
-        ((deck.size-1) downTo 1).forEach {
-            val j = (0..it).random()
-            deck.swap(it, j)
+    private fun shuffle() {
+        for (i in deck.size - 1 downTo 1) {
+            val j = (0..i).random()
+            deck.swap(i, j)
         }
     }
 
-    fun dealOneCard() = iterator.next()
-    fun hasNext() = iterator.hasNext()
+    fun dealOneCard(): String = iterator.next()
+    fun hasNext(): Boolean = iterator.hasNext()
 }
 
-// A game takes a dealer and implements a loops in turns its the play function
-class Game(private val dealer: Dealer) {
-    fun play() {
-        println("\nLet's play...\n")
+interface CardGame {
+    val key: String
+    val name: String
+    val description: String
+    fun play()
+}
 
-        turnLoop@ while (dealer.hasNext()) {
-            print("press enter to be dealt a card:")
+class FlipGame(private val dealer: Dealer) : CardGame {
+    override val key = "1"
+    override val name = "Flip"
+    override val description = "flip through the whole deck one card at a time"
+
+    override fun play() {
+        println("\nLet's play $name!\n")
+        while (dealer.hasNext()) {
+            print("Press enter to be dealt a card: ")
             readLine()
-            print("${dealer.dealOneCard()}\n\n")
+            println("${dealer.dealOneCard()}\n")
         }
+        println("=== Deck exhausted. Game over! ===")
     }
 }
 
-// main gets a dealer starts a game
-fun main() {
-    val dealer = Dealer()
-    val game = Game(dealer)
+class WarGame(private val dealer: Dealer) : CardGame {
+    override val key = "2"
+    override val name = "War"
+    override val description = "battle the CPU, highest card wins each round"
 
-    game.play()
+    override fun play() {
+        println("\nLet's play $name!\n")
+
+        val player = mutableListOf<String>()
+        val computer = mutableListOf<String>()
+
+        while (dealer.hasNext()) {
+            player.add(dealer.dealOneCard())
+            if (dealer.hasNext()) computer.add(dealer.dealOneCard())
+        }
+
+        var playerScore = 0
+        var computerScore = 0
+
+        while (player.isNotEmpty() && computer.isNotEmpty()) {
+            print("Press enter to battle: ")
+            readLine()
+
+            val playerCard = player.removeFirst()
+            val computerCard = computer.removeFirst()
+            val result = cardValue(playerCard).compareTo(cardValue(computerCard))
+
+            println("  You: $playerCard  vs  CPU: $computerCard")
+            when {
+                result > 0 -> {
+                    println("  ✅ You win this round!\n")
+                    playerScore++
+                }
+                result < 0 -> {
+                    println("  ❌ CPU wins this round!\n")
+                    computerScore++
+                }
+                else -> println("  🤝 Tie!\n")
+            }
+        }
+
+        println("=== Final Score ===")
+        println("You: $playerScore  |  CPU: $computerScore")
+        println(
+            when {
+                playerScore > computerScore -> "🏆 You win the war!"
+                playerScore < computerScore -> "💀 CPU wins the war!"
+                else -> "🤝 It's a tie!"
+            }
+        )
+    }
+}
+
+class HigherLowerGame(private val dealer: Dealer) : CardGame {
+    override val key = "3"
+    override val name = "Higher or Lower"
+    override val description = "guess whether the next card will be higher or lower"
+
+    override fun play() {
+        println("\nLet's play $name!\n")
+
+        if (!dealer.hasNext()) {
+            println("Deck exhausted. Game over!")
+            return
+        }
+
+        var currentCard = dealer.dealOneCard()
+        var score = 0
+
+        println("Starting card: $currentCard\n")
+
+        while (dealer.hasNext()) {
+            print("Will the next card be (h)igher or (l)ower? ")
+            val guess = readLine()?.trim()?.lowercase()
+
+            if (guess != "h" && guess != "l") {
+                println("Invalid choice. Please enter 'h' or 'l'.\n")
+                continue
+            }
+
+            val nextCard = dealer.dealOneCard()
+            val currentValue = cardValue(currentCard)
+            val nextValue = cardValue(nextCard)
+
+            println("Current: $currentCard  ->  Next: $nextCard")
+
+            when {
+                nextValue == currentValue -> {
+                    println("🤝 Tie rank — no point awarded.\n")
+                }
+                guess == "h" && nextValue > currentValue -> {
+                    println("✅ Correct!\n")
+                    score++
+                }
+                guess == "l" && nextValue < currentValue -> {
+                    println("✅ Correct!\n")
+                    score++
+                }
+                else -> {
+                    println("❌ Wrong guess.\n")
+                }
+            }
+
+            currentCard = nextCard
+        }
+
+        println("=== Final Score ===")
+        println("You scored $score correct guess(es).")
+    }
+}
+
+fun availableGames(dealer: Dealer): List<CardGame> = listOf(
+    FlipGame(dealer),
+    WarGame(dealer),
+    HigherLowerGame(dealer)
+)
+
+fun main() {
+    println("=== Card Games ===")
+
+    val dealer = Dealer()
+    val games = availableGames(dealer)
+
+    games.forEach { game ->
+        println("${game.key}) ${game.name.padEnd(16)} — ${game.description}")
+    }
+
+    print("\nWhich game would you like to play? (${games.joinToString(" or ") { it.key }}): ")
+    val choice = readLine()?.trim()
+
+    val selectedGame = games.find { it.key == choice } ?: games.first().also {
+        println("Invalid choice — defaulting to ${it.name}.")
+    }
+
+    selectedGame.play()
 }
